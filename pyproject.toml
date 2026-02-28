@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "realignpro"
+version = "0.1.0"
+description = "ReAlignPro: realignment of promoter sequences by centralizing transcription start sites and exporting MAF/BED/figures."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+
+authors = [
+  { name = "Chul", email = "chul.bioinfo@gmail.com" }
+]
+
+dependencies = [
+  "matplotlib>=3.5"
+]
+
+[project.scripts]
+realignpro = "realignpro.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Add this block to pyproject.toml (recommended)
+[project.optional-dependencies]
+dev = ["pytest"]

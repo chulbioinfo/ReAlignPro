@@ -1,0 +1,4 @@
+matplotlib>=3.5
+
+[dev]
+pytest
