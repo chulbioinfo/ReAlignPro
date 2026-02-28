@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/realignpro_banner.jpg" alt="ReAlignPro banner" width="900">
+</p>
+
 # ReAlignPro
 
 ReAlignPro is a command-line toolkit for:
