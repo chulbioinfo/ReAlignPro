@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use ReAlignPro, please cite it as below."
+title: "CCG insertion specific to humans in the autism-related RBFOX1 promoter"
+authors: "Chul Lee, Matthew H. Davenport, Erich D. Jarvis"
+email: "chul.bioinfo@gmail.com"
+repository-code: "https://github.com/chulbioinfo/ReAlignPro"
+url: "https://github.com/chulbioinfo/ReAlignPro"
+license: "GPL-3.0"
+version: "0.1.0"
+date-released: "2026-02-27"
+keywords:
+  - "comparative genomics"
+  - "multiple sequence alignment"
+  - "MAF"
+  - "UCSC Genome Browser"
+  - "promoter evolution"
+  - "regulatory genomics"
