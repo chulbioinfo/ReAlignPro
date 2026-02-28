@@ -25,7 +25,7 @@ jobs:
       - name: Install external binaries
         shell: bash -l {0}
         run: |
-          micromamba install -y -n realignpro-e2e -c conda-forge -c bioconda lastz muscle samtools
+          micromamba install -y -n realignpro-e2e -c conda-forge -c bioconda lastz "muscle=3.8.1551" samtools
 
       - name: Install package (editable, with dev extras)
         shell: bash -l {0}
