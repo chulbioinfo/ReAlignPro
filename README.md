@@ -19,7 +19,7 @@ Note: `fa2maf` requires external binaries available in `PATH`:
 
 ### conda (recommended)
 ```bash
-mamba install -c conda-forge -c bioconda realignpro lastz muscle samtools
+mamba install -c conda-forge -c bioconda realignpro lastz "muscle=3.8.1551" samtools
 ```
 
 ## Quick start
