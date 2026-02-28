@@ -26,6 +26,8 @@ Note: `fa2maf` requires external binaries available in `PATH`:
 mamba install -c conda-forge -c bioconda realignpro lastz "muscle=3.8.1551" samtools
 ```
 
+![Workflow](assets/figures/realignpro_workflow.jpg)
+
 ## Quick start
 
 ```bash
