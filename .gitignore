@@ -1,0 +1,85 @@
+# -----------------------------
+# Python bytecode / caches
+# -----------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# -----------------------------
+# Packaging / build artifacts
+# -----------------------------
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# -----------------------------
+# Virtual environments
+# -----------------------------
+.venv/
+venv/
+env/
+.conda/
+.mamba/
+
+# -----------------------------
+# Test / coverage
+# -----------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# -----------------------------
+# Jupyter / editors / OS
+# -----------------------------
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# -----------------------------
+# ReAlignPro outputs (common)
+# -----------------------------
+work/
+output/
+intermediates/
+
+# If you keep example work dirs inside examples/
+examples/**/work/
+examples/**/output/
+examples/**/intermediates/
+
+# -----------------------------
+# Bioinformatics common outputs
+# -----------------------------
+*.maf
+*.maf.gz
+*.bed
+*.bed.gz
+*.tsv
+*.csv
+
+# Index / auxiliary files
+*.fai
+*.gzi
+*.tbi
+*.csi
+*.bai
+*.crai
+*.mmi
+*.paf
+*.sam
+*.bam
+*.cram
+
+# Logs / temporary
+*.log
+*.tmp
+*.temp
+*.bak
+*~
