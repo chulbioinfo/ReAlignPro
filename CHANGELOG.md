@@ -7,6 +7,16 @@ This project follows a lightweight semantic versioning scheme:
 - **MINOR**: new features that remain backward compatible
 - **PATCH**: bug fixes and minor improvements
 
+## [0.1.1] - 2026-03-01
+
+### Changed
+- MUSCLE v5 is now supported without pinning by auto-detecting MUSCLE v3 versus v5 and adapting the CLI invocation accordingly.
+- Synchronize TSS-anchored FASTA header coordinates with gapless MAF coordinates to ensure consistent genomic intervals across outputs.
+
+### Fixed
+- Removed tracked Python bytecode cache files (`__pycache__`) from the repository.
+
+
 ## [0.1.0] - 2026-02-27
 
 ### Added
@@ -25,4 +35,6 @@ This project follows a lightweight semantic versioning scheme:
   - Pinned MUSCLE to version 3.8.1551 for the CI workflow due to CLI incompatibilities with MUSCLE v5.
   - Added missing standard-library import required by the MAF-to-BED step.
 
+
+[0.1.1]: https://github.com/chulbioinfo/ReAlignPro/releases/tag/v0.1.1
 [0.1.0]: https://github.com/chulbioinfo/ReAlignPro/releases/tag/v0.1.0
