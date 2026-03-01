@@ -665,10 +665,6 @@ class QueryIdParser:
 # -----------------------------
 # RBH
 # -----------------------------
-
-# -----------------------------
-# RBH
-# -----------------------------
 class RecordParserRBH:
     @staticmethod
     def parse_species_from_assembly(assembly_id: str) -> str:
@@ -1313,10 +1309,6 @@ class HeaderTools:
 
         FastaIO.write_fasta(out_records, sanitized_fa)
         return desired_order, meta_by_sanitized
-
-# -----------------------------
-# TSS anchoring + alignment utilities
-# -----------------------------
 
 # -----------------------------
 # TSS anchoring + alignment utilities
