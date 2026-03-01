@@ -893,21 +893,151 @@ def _worker_rbh(args: dict, genome_path: str) -> Tuple[str, int, int, int, List[
 # MUSCLE
 # -----------------------------
 class MuscleRunner:
+    """Run MUSCLE with automatic CLI adaptation for MUSCLE v3 and v5.
+
+    MUSCLE v3 uses:
+        muscle -in <in.fa> -out <out.fa> [options]
+
+    MUSCLE v5 uses:
+        muscle -align <in.fa> -output <out.fa> [options]
+    """
+
+    _re_major = re.compile(r"(?:MUSCLE\s*(?:v|V)?\s*)?(\d+)(?:\.\d+)*")
+
     def __init__(self, muscle_bin: str = "muscle"):
         self.muscle_bin = muscle_bin
         if shutil.which(self.muscle_bin) is None:
             raise RuntimeError(f"MUSCLE not found in PATH: {self.muscle_bin}")
 
+        self.version_text = self._detect_version_text()
+        self.major_version = self._parse_major_version(self.version_text)
+
+    @staticmethod
+    def _parse_major_version(version_text: str) -> int:
+        if not version_text:
+            return 3
+        m = MuscleRunner._re_major.search(version_text)
+        if m:
+            try:
+                return int(m.group(1))
+            except ValueError:
+                return 3
+        # Fallback: first digit in the output
+        m2 = re.search(r"(\d+)", version_text)
+        if m2:
+            try:
+                return int(m2.group(1))
+            except ValueError:
+                return 3
+        return 3
+
+    def _detect_version_text(self) -> str:
+        """Best-effort MUSCLE version detection.
+
+        MUSCLE v3 and v5 differ in supported flags. We attempt a few common version
+        flags and return combined stdout/stderr.
+        """
+        candidates = [
+            [self.muscle_bin, "-version"],
+            [self.muscle_bin, "--version"],
+            [self.muscle_bin, "-V"],
+        ]
+        for cmd in candidates:
+            try:
+                proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            except Exception:
+                continue
+            out = (proc.stdout or "") + (proc.stderr or "")
+            if out.strip():
+                return out.strip()
+
+        # Final fallback: ask for help and try to infer major version from it
+        for cmd in ([self.muscle_bin, "-h"], [self.muscle_bin, "--help"], [self.muscle_bin, "-help"]):
+            try:
+                proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            except Exception:
+                continue
+            out = (proc.stdout or "") + (proc.stderr or "")
+            if out.strip():
+                return out.strip()
+
+        return ""
+
+    @staticmethod
+    def _strip_io_flags(tokens: List[str]) -> List[str]:
+        """Remove input/output flags that would conflict with our own base command."""
+        io_flags = {"-in", "-out", "-align", "-output"}
+        out: List[str] = []
+        i = 0
+        while i < len(tokens):
+            t = tokens[i]
+            if t in io_flags:
+                # Skip flag and its value if present
+                i += 1
+                if i < len(tokens) and not tokens[i].startswith("-"):
+                    i += 1
+                continue
+            out.append(t)
+            i += 1
+        return out
+
+    @staticmethod
+    def _translate_v3_to_v5(tokens: List[str]) -> List[str]:
+        """Translate a small subset of MUSCLE v3 flags to their v5 equivalents.
+
+        This is intentionally conservative and only translates flags we know are
+        common in ReAlignPro defaults. Other flags are passed through as-is.
+        """
+        out: List[str] = []
+        i = 0
+        while i < len(tokens):
+            t = tokens[i]
+
+            # v3: -maxiters N  -> v5: -refineiters N (closest analogue)
+            if t == "-maxiters" and i + 1 < len(tokens):
+                n = tokens[i + 1]
+                out.extend(["-refineiters", n])
+                i += 2
+                continue
+
+            # v3 optimization flag not supported in v5
+            if t == "-diags":
+                i += 1
+                continue
+
+            out.append(t)
+            i += 1
+        return out
+
     def run(self, in_fa: Path, out_fa: Path, extra_args: Optional[List[str]] = None) -> None:
         out_fa.parent.mkdir(parents=True, exist_ok=True)
-        cmd = [self.muscle_bin, "-in", str(in_fa), "-out", str(out_fa), "-quiet"]
+
+        # Normalize extra args (remove in/out, then adapt if needed)
+        extra: List[str] = []
         if extra_args:
-            cmd.extend(extra_args)
+            extra = self._strip_io_flags(list(extra_args))
+            if self.major_version >= 5:
+                extra = self._translate_v3_to_v5(extra)
+
+        # Build MUSCLE command based on detected major version
+        if self.major_version >= 5:
+            # MUSCLE v5 CLI: -align <in.fa> -output <out.fa>
+            cmd = [self.muscle_bin, "-align", str(in_fa), "-output", str(out_fa)]
+        else:
+            # MUSCLE v3 CLI: -in <in.fa> -out <out.fa>
+            cmd = [self.muscle_bin, "-in", str(in_fa), "-out", str(out_fa), "-quiet"]
+
+        if extra:
+            cmd.extend(extra)
+
         proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if proc.returncode != 0:
-            raise RuntimeError(f"MUSCLE failed.\nCMD: {' '.join(cmd)}\nSTDERR:\n{proc.stderr}\n")
-
-
+            raise RuntimeError(
+                "MUSCLE failed.\n"
+                f"Detected MUSCLE major version: {self.major_version}\n"
+                f"CMD: {' '.join(cmd)}\n"
+                f"STDERR:\n{proc.stderr}\n"
+            )
 def reorder_aligned_fasta_inplace(aligned_fa: Path, desired_order: List[str]) -> None:
     recs = FastaIO.read_fasta(aligned_fa)
     by_id = {r.rid: r.seq for r in recs}
@@ -1537,13 +1667,30 @@ class TSSWindowSlicer:
         FastaIO.write_fasta(recs, out_fa)
 
     @staticmethod
-    def build_ungapped_tss_fasta(aligned_records: List[FastaRecord], tss_col: int, window: int, pad_char: str, out_fa: Path) -> None:
+    def build_ungapped_tss_fasta(
+        aligned_records: List[FastaRecord],
+        tss_col: int,
+        window: int,
+        pad_char: str,
+        out_fa: Path,
+        id_override_by_old_id: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """Write a gap-free, fixed-length TSS-window FASTA.
+
+        By default, record IDs are kept as-is. If `id_override_by_old_id` is provided,
+        each output ID is replaced by the corresponding value in the mapping, allowing
+        the FASTA headers to encode coordinate systems consistent with other outputs
+        (for example, matching the gapless MAF start positions).
+        """
         recs: List[Tuple[str, str]] = []
         for r in aligned_records:
             ungapped = r.seq.replace("-", "")
             tss_idx = AlnUtils.count_ungapped_before(r.seq, tss_col)
             up, dn = WindowExtractor.extract_up_dn(ungapped, tss_idx, window, pad_char)
-            recs.append((r.rid, up + dn))
+            out_id = r.rid
+            if id_override_by_old_id is not None and out_id in id_override_by_old_id:
+                out_id = id_override_by_old_id[out_id]
+            recs.append((out_id, up + dn))
         FastaIO.write_fasta(recs, out_fa)
 
 
@@ -1673,6 +1820,7 @@ class DatasetProcessor:
             query_win_start1 = self.tss_pos_1based - self.window
 
             maf_rows_gapless: List[Tuple[str, int, int, str, int, str]] = []
+            id_override_by_sid: Dict[str, str] = {}
             for sid in desired_order:
                 meta = meta_by_id[sid]
                 text = gapless_by_id[sid]
@@ -1682,6 +1830,14 @@ class DatasetProcessor:
                     src = MafWriter.maf_src_ref(self.ref_name, self.query_contig)
                     start0 = max(0, query_win_start1 - 1)
                     maf_rows_gapless.append((src, start0, size, "+", self.ref_contig_size, text))
+                    # Sync FASTA headers to gapless MAF coordinates (1-based inclusive)
+                    start1_fa = start0 + 1
+                    end1_fa = start0 + size
+                    if "." in src:
+                        pfx, c = src.split(".", 1)
+                        id_override_by_sid[sid] = f"{pfx}|{c}|{start1_fa}|{end1_fa}|+"
+                    else:
+                        id_override_by_sid[sid] = f"{src}|{start1_fa}|{end1_fa}|+"
                     continue
 
                 asm = meta["assembly_id"]
@@ -1710,8 +1866,27 @@ class DatasetProcessor:
                 start0 = start1 - 1
                 src = MafWriter.maf_src_assembly(asm, contig)
                 maf_rows_gapless.append((src, start0, size, meta["maf_strand"], src_size, text))
+                # Sync FASTA headers to gapless MAF coordinates (1-based inclusive)
+                start1_fa = start0 + 1
+                end1_fa = start0 + size
+                strand_fa = meta["maf_strand"]
+                if "." in src:
+                    pfx, c = src.split(".", 1)
+                    id_override_by_sid[sid] = f"{pfx}|{c}|{start1_fa}|{end1_fa}|{strand_fa}"
+                else:
+                    id_override_by_sid[sid] = f"{src}|{start1_fa}|{end1_fa}|{strand_fa}"
 
             MafWriter.write_single_block_maf(outputs["maf_tss_gapless"], maf_rows_gapless)
+
+            # Rewrite the gap-free TSS-window FASTA so its header coordinates match the gapless MAF.
+            TSSWindowSlicer.build_ungapped_tss_fasta(
+                aligned_records=aligned_records,
+                tss_col=cm.tss_col,
+                window=self.window,
+                pad_char=self.pad_char,
+                out_fa=outputs["tss_ungapped_fa"],
+                id_override_by_old_id=id_override_by_sid,
+            )
 
         # Build aligned-by-query slice FASTA
         cols = TSSWindowSlicer.query_window_columns(
