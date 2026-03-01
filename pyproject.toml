@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "realignpro"
-version = "0.1.0"
+version = "0.1.1"
 description = "ReAlignPro: realignment of promoter sequences by centralizing transcription start sites and exporting MAF/BED/figures."
 readme = "README.md"
 requires-python = ">=3.8"
