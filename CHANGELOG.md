@@ -10,7 +10,7 @@ This project follows a lightweight semantic versioning scheme:
 ## [0.1.2] - 2026-05-08
 
 ### Added
-- `realignpro maf2con`: conversion of MAF/MAF.GZ to BED3 constrained intervals using inclusive target-group major-allele similarity, with `--target-ids all` support.
+- `realignpro maf2con`: conversion of MAF/MAF.GZ to BED3 constrained intervals using strict target-group major-allele similarity, with `--target-ids all` support.
 
 ## [0.1.1] - 2026-03-01
 

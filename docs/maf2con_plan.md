@@ -7,7 +7,7 @@
 - 확인 커밋: `6e53951f4d6133a860136601c592998fa1d85409`
 - 목표 기능: `realignpro maf2con`
   - MAF/MAF.GZ 입력을 읽고, reference 좌표계 기준 BED3 constrained interval을 출력한다.
-  - target을 전체 종으로 선택했을 때, target group 내 major allele/major sequence similarity가 기본 99% threshold 이상인 reference base들을 constrained base로 판정하고, 인접 base를 region으로 merge한다.
+  - target을 전체 종으로 선택했을 때, target group 내 major allele/major sequence similarity가 기본 99% threshold를 초과하는 reference base들을 constrained base로 판정하고, 인접 base를 region으로 merge한다.
 
 ## 2. maf2bed 현재 구조 요약
 
@@ -51,7 +51,7 @@
 - gap/N/ambiguous base가 전체 target 수에서 차지하는 비율
 - 입력 순서
 
-`maf2con`에서는 constrained 판정이 "모두 완전 동일한가"가 아니라 "major allele similarity가 threshold 이상인가"이므로, `set()` 대신 count-preserving tally를 써야 한다.
+`maf2con`에서는 constrained 판정이 "모두 완전 동일한가"가 아니라 "major allele similarity가 threshold를 초과하는가"이므로, `set()` 대신 count-preserving tally를 써야 한다.
 
 권장 방식은 `collections.Counter` 또는 4-base 고정 카운터이다.
 
@@ -75,7 +75,7 @@ def call_major_base(target_nts, threshold=0.99):
 
     if len(top_bases) != 1:
         return None, ratio
-    if ratio < threshold:
+    if ratio <= threshold:
         return None, ratio
 
     return top_bases[0], ratio
@@ -83,7 +83,7 @@ def call_major_base(target_nts, threshold=0.99):
 
 위 설계에서는 gap, `N`, 기타 ambiguous base는 major 후보에는 넣지 않지만 denominator에는 남긴다. 따라서 missing/gap이 많은 column이 가짜 constrained region으로 판정되는 것을 막는다.
 
-Threshold 비교는 `ratio >= threshold`로 한다. 따라서 기본값 `0.99`에서는 `990/1000 = 99%`도 constrained base로 포함된다.
+Threshold 비교는 `ratio > threshold`로 한다. 따라서 기본값 `0.99`에서는 `990/1000 = 99%`는 제외되고, `991/1000 = 99.1%`부터 constrained base로 포함된다.
 
 ## 4. maf2con 알고리즘 제안
 
@@ -138,7 +138,7 @@ realignpro maf2con --input merged.maf.gz --ref-id hg38 --target-ids all --output
 5. missing 또는 out-of-range sequence는 `"-"`로 처리한다.
 6. `A/C/G/T`만 major 후보로 count한다.
 7. denominator는 전체 target species 수로 둔다.
-8. top allele이 하나이고, `top_count / len(target_ids) >= min_major_similarity`이면 constrained base로 판정한다.
+8. top allele이 하나이고, `top_count / len(target_ids) > min_major_similarity`이면 constrained base로 판정한다.
 9. constrained base들은 기존 `matrix2var()`의 strand-aware merge 로직을 재사용한다.
 10. output은 BED3 line으로 쓴다.
 
@@ -210,7 +210,7 @@ def matrix2con(block, ref_id, target_ids, outgroup_ids, min_major_similarity, mi
 `call_major_base()`:
 
 - all A: constrained
-- 99% 이상/미만 threshold 경계
+- 99% 초과/이하 threshold 경계
 - A/C 동률: not constrained
 - gap 또는 N 포함: denominator penalty로 비보존 처리 가능
 - empty target list: not constrained
@@ -237,8 +237,8 @@ def matrix2con(block, ref_id, target_ids, outgroup_ids, min_major_similarity, mi
 ## 7. 주요 결정 사항
 
 1. Threshold 비교
-   - `ratio >= threshold`
-   - 기본값 `0.99`에서는 `990/1000 = 99%`도 constrained로 포함한다.
+   - `ratio > threshold`
+   - 기본값 `0.99`에서는 `990/1000 = 99%`는 제외하고 `991/1000 = 99.1%`부터 constrained로 포함한다.
 
 2. Gap/N 처리
    - 권장: major 후보에서는 제외하지만 denominator에는 포함한다.
@@ -256,7 +256,7 @@ def matrix2con(block, ref_id, target_ids, outgroup_ids, min_major_similarity, mi
 
 - `--target-ids all`은 input을 pre-scan하므로 큰 gz MAF에서 시간이 추가된다.
 - 현재 MAF parser는 같은 species ID가 한 block에 여러 번 나오면 마지막 record가 이전 것을 덮어쓴다. 이는 기존 `maf2bed`와 같은 동작이므로 이번 기능의 직접 범위 밖이지만, multi-chain MAF를 다룰 때는 주의가 필요하다.
-- 99% 이상 조건은 species 수가 작으면 사실상 100% 일치와 같아진다. 예를 들어 target 10개에서 9/10은 90%, 10/10만 100%다.
+- 99% 초과 조건은 species 수가 작으면 사실상 100% 일치와 같아진다. 예를 들어 target 10개에서 9/10은 90%, 10/10만 100%다.
 - target 전체가 모든 block에 있어야 하므로, 일부 species가 빠지는 block은 constrained로 출력되지 않는다. "block에 존재하는 species만으로 판정"이 필요하면 별도 옵션이 필요하다.
 
 ## 9. 권장 구현 순서

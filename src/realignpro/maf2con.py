@@ -6,8 +6,8 @@ Find constrained regions from MAF/MAF.GZ alignments and write BED3 intervals.
 
 Constrained definition (per reference base):
   - All target species must exist in the block.
-  - The most common A/C/G/T allele in the target group must be at least
-    --min-major-similarity (default: 0.99).
+  - The most common A/C/G/T allele in the target group must be strictly greater
+    than --min-major-similarity (default: 0.99).
   - Gap, N, and other ambiguous bases are not major-allele candidates, but they
     remain in the denominator so missing/ambiguous columns are penalized.
 
@@ -170,7 +170,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         dest="min_major_similarity",
         type=float,
         default=0.99,
-        help="Minimum major allele frequency within the target group.",
+        help="Strict lower bound for major allele frequency within the target group.",
     )
     parser.add_argument(
         "--min-target-count",
@@ -226,8 +226,8 @@ def _validate_and_build_config(args: argparse.Namespace) -> Maf2ConConfig:
     target_ids = _resolve_target_ids(input_maf, args.target_ids or "", outgroup_ids)
 
     min_major_similarity = float(args.min_major_similarity)
-    if not (0.0 <= min_major_similarity <= 1.0):
-        raise ValueError("--min-major-similarity must be in [0, 1].")
+    if not (0.0 <= min_major_similarity < 1.0):
+        raise ValueError("--min-major-similarity must be in [0, 1) because comparison is strict greater-than.")
 
     min_target_count = int(args.min_target_count)
     if min_target_count < 1:
@@ -260,7 +260,7 @@ def call_major_base(
     min_major_similarity: float = 0.99,
 ) -> Tuple[Optional[str], float]:
     """
-    Return the unique major A/C/G/T base and its frequency when it meets the threshold.
+    Return the unique major A/C/G/T base and its frequency when it exceeds the threshold.
 
     Gap, N, and other ambiguous values are excluded from candidate counts but included
     in the denominator.
@@ -280,7 +280,7 @@ def call_major_base(
 
     if len(top_bases) != 1:
         return None, ratio
-    if ratio < min_major_similarity:
+    if ratio <= min_major_similarity:
         return None, ratio
 
     return top_bases[0], ratio
