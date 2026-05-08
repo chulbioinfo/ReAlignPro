@@ -33,4 +33,5 @@ def test_top_level_help_and_version() -> None:
 def test_subcommand_help() -> None:
     _run(["fa2maf", "--help"])
     _run(["maf2bed", "--help"])
+    _run(["maf2con", "--help"])
     _run(["tsv2fig", "--help"])
