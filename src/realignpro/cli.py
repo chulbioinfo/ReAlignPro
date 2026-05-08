@@ -17,6 +17,7 @@ Usage:
 Commands:
   fa2maf    Find orthologous sequences, align with MUSCLE, and export MAF/TSV outputs.
   maf2bed   Extract target-shared, others-absent positions from MAF and write BED3 intervals.
+  maf2con   Find target-group constrained MAF positions by major-allele similarity.
   tsv2fig   Plot sequence tables from conservation-matrix TSV (PDF outputs).
 
 Run:
@@ -46,6 +47,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     if cmd == "maf2bed":
         from . import maf2bed
         return int(maf2bed.main(rest))
+
+    if cmd == "maf2con":
+        from . import maf2con
+        return int(maf2con.main(rest))
 
     if cmd == "tsv2fig":
         from . import tsv2fig

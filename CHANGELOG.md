@@ -7,6 +7,11 @@ This project follows a lightweight semantic versioning scheme:
 - **MINOR**: new features that remain backward compatible
 - **PATCH**: bug fixes and minor improvements
 
+## [0.1.2] - 2026-05-08
+
+### Added
+- `realignpro maf2con`: conversion of MAF/MAF.GZ to BED3 constrained intervals using strict target-group major-allele similarity, with `--target-ids all` support.
+
 ## [0.1.1] - 2026-03-01
 
 ### Changed
@@ -36,5 +41,6 @@ This project follows a lightweight semantic versioning scheme:
   - Added missing standard-library import required by the MAF-to-BED step.
 
 
+[0.1.2]: https://github.com/chulbioinfo/ReAlignPro/releases/tag/v0.1.2
 [0.1.1]: https://github.com/chulbioinfo/ReAlignPro/releases/tag/v0.1.1
 [0.1.0]: https://github.com/chulbioinfo/ReAlignPro/releases/tag/v0.1.0
