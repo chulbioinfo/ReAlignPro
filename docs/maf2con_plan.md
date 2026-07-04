@@ -1,5 +1,12 @@
 # maf2con 구현 계획서
 
+> **Historical note (2026-07-03):** 이 문서는 **v0.1.2 초기 설계**(whole-block gate + 고정 denominator)를
+> 기록한 것으로, 현재 구현과 다릅니다. v0.2.0부터 `maf2con`은 **coverage-aware 엔진**으로 대체되었습니다:
+> per-reference-column 분모 = 정렬된 `N_cov`(gap/N 제외), whole-block gate 제거, 염색체별 coverage floor
+> (`--min-depth` / `--min-call-rate` × 자동 산출 `N_exp`), `--fixed-only`(100% monomorphic). 특히 본 문서
+> §"block-local all을 피하라"는 권고는 v0.2.0에서 **의도적으로 뒤집혔습니다**(성염색체 등 정렬 depth가
+> block마다 다른 데이터를 다루기 위함). 현재 동작·근거는 `CHANGELOG.md`와 `src/realignpro/maf2con_cov.py`를 참조.
+
 ## 1. 작업 범위
 
 - 대상 저장소: `https://github.com/chulbioinfo/ReAlignPro`
