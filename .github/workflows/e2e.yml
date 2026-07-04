@@ -39,3 +39,10 @@ jobs:
           cd examples/test
           chmod +x run_test.sh
           ./run_test.sh
+
+      - name: Run maf2con demo (coverage-aware, chrY example)
+        shell: bash -l {0}
+        run: |
+          cd examples/maf2con
+          chmod +x run_maf2con_demo.sh
+          ./run_maf2con_demo.sh

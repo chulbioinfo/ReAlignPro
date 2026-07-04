@@ -7,7 +7,7 @@
 ReAlignPro is a command-line toolkit for:
 - `fa2maf`: identify orthologous regions via LASTZ reciprocal-best hits, align sequences with MUSCLE, and export MAF/TSV outputs.
 - `maf2bed`: extract target-shared, others-absent positions from a MAF/MAF.GZ and write BED3 intervals.
-- `maf2con`: extract constrained regions where the target-group major allele frequency is greater than a threshold.
+- `maf2con`: extract constrained regions from a MAF/MAF.GZ where the major allele among the **aligned** target assemblies exceeds a threshold (default >99%). Coverage-aware: a per-column coverage floor (absolute `--min-depth` and/or a call-rate relative to the reference chromosome's expected depth) lets autosomes and sex chromosomes be handled in one run, and `--fixed-only` reports only 100%-fixed (monomorphic) columns.
 - `tsv2fig`: generate PDF sequence-table plots from a conservation-matrix TSV.
 
 ## Installation

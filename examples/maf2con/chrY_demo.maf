@@ -1,0 +1,20 @@
+##maf version=1
+
+# Tiny chrY-style demo for `realignpro maf2con` (coverage-aware).
+# Reference = hg38.chrY; targets = hs1..hs4 (+ hg38 via --target-ids all).
+# Block 1 (chrY:0-8):  all 5 present, fully conserved.
+# Block 2 (chrY:20-28): hs4 MISSING (varying depth) and one polymorphic column
+#                       (chrY:24, where hs3 carries T instead of A).
+
+a score=0
+s hg38.chrY 0 8 + 57227415 ACGTACGT
+s hs1.chrY 0 8 + 100 ACGTACGT
+s hs2.chrY 0 8 + 100 ACGTACGT
+s hs3.chrY 0 8 + 100 ACGTACGT
+s hs4.chrY 0 8 + 100 ACGTACGT
+
+a score=0
+s hg38.chrY 20 8 + 57227415 ACGTACGT
+s hs1.chrY 20 8 + 100 ACGTACGT
+s hs2.chrY 20 8 + 100 ACGTACGT
+s hs3.chrY 20 8 + 100 ACGTTCGT

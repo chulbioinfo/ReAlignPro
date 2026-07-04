@@ -7,6 +7,26 @@ This project follows a lightweight semantic versioning scheme:
 - **MINOR**: new features that remain backward compatible
 - **PATCH**: bug fixes and minor improvements
 
+## [0.2.0] - 2026-07-03
+
+### Changed (BREAKING)
+> `maf2con` was introduced in 0.1.2, so this reworks a brand-new command; the other
+> commands (`fa2maf`, `maf2bed`, `tsv2fig`) are unchanged. The behavior/CLI change is
+> incompatible with 0.1.2's `maf2con` — pin `realignpro==0.1.2` to reproduce it.
+
+- `realignpro maf2con` is now **coverage-aware by default and is the only engine**; the legacy fixed-denominator / whole-block-gate engine has been removed.
+  - Per reference column the denominator is the aligned depth `N_cov` (gap/N excluded from numerator and denominator), the whole-block gate is gone, and a per-column coverage floor is applied so blocks with missing assemblies are still assessed.
+  - New defaults: `--min-call-rate 0.99` (require `N_cov >= ceil(rate * N_exp)`, where `N_exp` is the reference chromosome's expected depth) and `--min-major-similarity 0.99`.
+  - `N_exp` is auto-derived per reference chromosome by a cheap pre-scan when the relative floor is in effect and `--expected-depth` is not given, so autosomes / chrX / chrY are handled in one run.
+  - Removed flags `--coverage-aware` and `--auto-depth` (both are now the default/implicit behavior). To reproduce the previous behavior, use the 0.1.2 release.
+
+### Added
+- `--min-depth` (absolute coverage floor), `--expected-depth` (pin `N_exp` and skip the pre-scan), `--min-call-rate` (relative floor; `0` disables it), `--fixed-only` (report only 100% fixed / monomorphic columns, ignoring `--min-major-similarity`), `--emit-depth` (append `N_cov` and major-allele frequency columns to each BED interval).
+- New module `realignpro.maf2con_cov`; tests `tests/test_maf2con_cov.py`.
+
+### Notes
+- Homologous X/Y cross-alignment (PAR / XTR / gametolog) is intentionally not separated; pooling only dilutes the major-allele fraction, a conservative false negative. See `ConstraintVariantAnalysisPlan_v0.3.md`.
+
 ## [0.1.2] - 2026-05-08
 
 ### Added
