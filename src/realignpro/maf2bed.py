@@ -14,6 +14,8 @@ Extra utility:
 
 Variant definition (per reference base):
   - All target species must exist in the block
+  - Every target base at that column must be an unambiguous A/C/G/T
+    (a gap, N, or any other IUPAC ambiguity code in ANY target skips the column)
   - Target species share exactly one allele at that column
   - That allele must NOT appear among other species in the block
   - Species in OUTGROUP_IDS are skipped entirely when building allele sets
@@ -63,6 +65,10 @@ DEFAULT_OUT_QSIZE = 200
 # Sentinel values
 WORK_STOP = None
 OUT_STOP_IDX = -1
+
+# Unambiguous bases; anything else in a target column (gap, N, IUPAC codes) is
+# treated as missing data and the column is not called.
+DNA_BASES = {"A", "C", "G", "T"}
 
 
 # ----------------------------
@@ -380,6 +386,9 @@ def matrix2var(
     Identify target-shared, others-absent positions on the reference, then merge adjacent hits
     into blocks within the current MAF block to reduce output size.
 
+    Columns where any target base is not an unambiguous A/C/G/T (gap, N, IUPAC ambiguity)
+    are skipped, so assembly gaps in a target cannot be reported as shared alleles.
+
     Output:
       - BED3 lines, UCSC 0-based half-open (chromStart inclusive, chromEnd exclusive)
 
@@ -450,6 +459,13 @@ def matrix2var(
                 target_nts.append(nt)
             else:
                 other_nts.append(nt)
+
+        # Missing/ambiguous target data must not be called: if any target carries a
+        # gap, N, or other non-ACGT character, skip the column entirely. Flushing here
+        # keeps a skipped column from bridging two merged intervals.
+        if any(nt not in DNA_BASES for nt in target_nts):
+            flush_current()
+            continue
 
         tset = set(target_nts)
         oset = set(other_nts)
