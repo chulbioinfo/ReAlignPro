@@ -7,6 +7,27 @@ This project follows a lightweight semantic versioning scheme:
 - **MINOR**: new features that remain backward compatible
 - **PATCH**: bug fixes and minor improvements
 
+## [0.2.1] - 2026-08-06
+
+### Fixed
+- `realignpro maf2bed` no longer calls columns where a target base is missing or ambiguous.
+  A column is assessed only when **every** target carries an unambiguous `A/C/G/T`; a gap, `N`,
+  or any other IUPAC ambiguity code in any target skips the column. Previously `N` and `-` were
+  treated as ordinary alleles, so an assembly-gap run shared by all targets (`tset == {"N"}`)
+  satisfied the "targets share one allele, others lack it" rule and was emitted as a BED interval.
+  This brings `maf2bed` in line with `maf2con`, which has always restricted calls to `A/C/G/T`.
+  - Skipped columns also break interval merging, so a masked column no longer bridges two
+    otherwise separate hits into one interval (verified on both `+` and `-` strand).
+  - Soft-masked lowercase bases are unaffected — sequence is still upper-cased before the check.
+
+> **Output impact:** `maf2bed` emits strictly fewer / shorter intervals than 0.2.0 on alignments
+> containing assembly gaps. The positions removed are those with no unambiguous target base, which
+> could not have been supported calls. `fa2maf`, `maf2con`, and `tsv2fig` are unchanged.
+
+### Added
+- `tests/test_maf2bed.py`: regression tests for the `A/C/G/T`-only target rule, interval-merge
+  breaking on both strands, and soft-mask handling.
+
 ## [0.2.0] - 2026-07-03
 
 ### Changed (BREAKING)
