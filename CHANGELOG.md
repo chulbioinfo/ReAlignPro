@@ -7,6 +7,43 @@ This project follows a lightweight semantic versioning scheme:
 - **MINOR**: new features that remain backward compatible
 - **PATCH**: bug fixes and minor improvements
 
+## [0.2.2] - 2026-08-20
+
+### Added
+- `realignpro maf2bed` now decompresses **BGZF** input through `bgzip -@` instead of
+  Python's `gzip` module. BGZF is what `bgzip`, `cactus-hal2maf` and `taffy view -c`
+  write, and although it is a valid gzip stream (so `gzip.open` reads it correctly),
+  `gzip.open` decodes it as one serial stream while `bgzip` decodes its blocks in
+  parallel. maf2bed has a single reader feeding every worker, so the reader's speed
+  is the whole tool's ceiling.
+  - Measured on `vgp-577way.mammals.maf.gz` (186 GB, BGZF): reader throughput
+    **243 MB/s -> 843 MB/s (3.5x)**.
+  - New `--reader-threads` (default 4) sets `bgzip -@`. It is *additional* to
+    `--threads`, which still counts 1 reader + 1 writer + workers.
+  - Automatic and safe: the BGZF magic (FEXTRA plus the "BC" subfield) is checked,
+    and the code falls back to `gzip.open` for plain gzip, for non-BGZF input, or
+    when `bgzip` is not on PATH. `fa2maf`, `maf2con` and `tsv2fig` are unchanged.
+
+> **Output impact: none.** Verified byte-identical to 0.2.1 across BGZF, plain gzip
+> and uncompressed forms of the same MAF, in both directions.
+
+### Fixed
+- A truncated or corrupt BGZF file now raises instead of being read as a short file:
+  a non-zero `bgzip` exit becomes a `RuntimeError` (SIGPIPE from stopping the read
+  early is excluded). Previously a decompression failure could look like a
+  legitimate end of file and silently yield a partial BED.
+  - The check waits up to `BGZIP_EXIT_GRACE_SEC` (60 s) for `bgzip` to exit on its
+    own before terminating it, and never reports a failure for a process it killed
+    itself. Reaching EOF on the pipe does not mean the child has been reaped: on a
+    24 GB input that race made a completed read report `exit code -15` (SIGTERM
+    sent by this very code path). It is also skipped while another exception is
+    unwinding, so it cannot mask the real cause.
+- The reader now pushes its worker stop sentinels from a `finally`. Previously a
+  reader that died part-way left every worker blocked on an empty queue, so the
+  run hung silently instead of failing -- one such hang burned 6 h of wall clock
+  before it was noticed. Present in 0.2.1 as well (reproducible there with a
+  truncated plain-gzip input); fixed here.
+
 ## [0.2.1] - 2026-08-06
 
 ### Fixed
